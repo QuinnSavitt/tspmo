@@ -1,0 +1,68 @@
+{
+    "scopeName": "source.tspmo",
+    "patterns": [
+      {
+        "name": "comment.block.tspmo",
+        "begin": "->",
+        "end": "<-"
+      },
+      {
+        "name": "entity.name.module.tspmo",
+        "match": "(?<=\\bREF\\s)([\\w]+)"
+      },
+      {
+        "name": "entity.name.function.tspmo",
+        "match": "(?<=\\bLEBRON\\s)\\w+"
+      },
+      {
+        "name": "keyword.control.flow.tspmo",
+        "match": "\\b(hawk|lion|tiger|fr|ong|kid|gurt)\\b"
+      },
+      {
+        "name": "keyword.control.tspmo",
+        "match": "\\b(LEBRON|ngl|GOAT|REF|DO\\s+SOMETHING)\\b"
+      },
+      {
+        "name": "keyword.declaration.tspmo",
+        "match": "\\b(rizz|yap|sybau|dih|yo|pt)\\b"
+      },
+      {
+        "name": "keyword.operator.secondary.tspmo",
+        "match": "\\b(chat\\?|spill|sayong|tf|lowkey)\\b"
+      },
+      {
+        "name": "keyword.operator.arithmetic.tspmo",
+        "match": "\\b(touch|#shrink|cavendish|big25|crockpot|bigf)\\b"
+      },
+      {
+        "name": "keyword.operator.boolean.tspmo",
+        "match": "\\b(chill|grind|L)\\b"
+      },
+      {
+        "name": "keyword.operator.comparison.tspmo",
+        "match": "\\b(mogs|vibes)\\b"
+      },
+      {
+        "name": "keyword.operator.string.tspmo",
+        "match": "\\b(stroke|ad|rm|BOOM)\\b"
+      },
+      {
+        "name": "constant.numeric.integer.tspmo",
+        "match": "\\b(?:tun\\s+)+sahur\\b"
+      },
+      {
+        "name": "constant.numeric.integer.tspmo",
+        "match": "\\b(sigma|beta|ls)\\b"
+      },
+      {
+        "name": "string.quoted.delimiter.tspmo",
+        "begin": "\\blegit\\b",
+        "end": "\\bbro\\b"
+      },
+      {
+        "name": "punctuation.terminator.tspmo",
+        "match": "\\b(ts|pmo)\\b"
+      }
+    ]
+  }
+  

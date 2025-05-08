@@ -1,0 +1,24 @@
+{
+    "comments": {
+      "blockComment": ["->", "<-"]
+    },
+    "autoClosingPairs": [
+      { "open": "legit", "close": " bro" },
+      { "open": "ts", "close": " pmo" }
+    ],
+    "surroundingPairs": [
+      { "open": "legit", "close": " bro" },
+      { "open": "(", "close": ")" }
+    ],
+    "brackets": [
+      ["ts", "pmo"],
+      ["LEBRON", "GOAT"],
+      ["REF", " DO SOMETHING"]
+    ],
+    "indentationRules": {
+      "increaseIndentPattern": "^\\s*(LEBRON\\b.*\\bngl|ts\\s+(hawk|lion|tiger|kid)\\b.*pmo)\\s*$",
+      "decreaseIndentPattern": "^\\s*(GOAT|ts\\s+(fr|ong|gurt)\\b.*pmo)\\s*$"
+    },
+    "wordPattern": "\\b[#?\\w]+\\b"
+  }
+  

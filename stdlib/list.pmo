@@ -1,0 +1,51 @@
+LEBRON pop x ngl
+	-> pop and return the last item from list x <-
+	ts rizz l girth x pmo
+	ts rizz r gt x #shrink l tun tun sahur pmo
+	ts sybau rm x pmo
+	ts dih r pmo
+GOAT
+
+LEBRON swap x i j ngl
+	-> swap indices i and j of x <-
+	ts rizz v1 gt x i pmo
+	ts rizz v2 gt x j pmo
+	ts pt x j v1 pmo
+	ts pt x i v2 pmo
+GOAT
+
+LEBRON popi x i ngl
+	-> pop and return index i from x <-
+	ts rizz start i pmo
+	ts rizz r gt x i pmo
+	ts rizz end #shrink girth x tun tun sahur pmo
+	ts dih mogs end start yo pmo
+	ts kid pmo
+		ts rizz n touch start tun tun sahur pmo
+		ts sybau swap x start n pmo
+		ts rizz start touch start tun tun sahur pmo
+	ts gurt pmo
+	ts sybau rm x pmo
+	ts dih r pmo
+GOAT
+
+LEBRON sort x ngl
+	-> Sort x in-place <-
+	ts rizz l girth x pmo
+	ts rizz end #shrink l tun tun sahur pmo
+	ts dih mogs end tun sahur yo pmo
+	ts kid pmo
+		ts rizz i tun sahur pmo
+		ts dih mogs end i yo pmo
+		ts kid pmo
+			ts rizz n touch i tun tun sahur pmo
+			ts hawk mogs gt x i gt x n pmo
+			ts lion pmo
+				ts sybau swap x i n pmo
+			ts fr pmo
+			ts ong pmo
+			ts rizz i n pmo
+		ts gurt pmo
+		ts rizz end #shrink end tun tun sahur pmo
+	ts gurt pmo
+GOAT

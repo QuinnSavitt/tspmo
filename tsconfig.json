@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+	  "module": "commonjs",
+	  "target": "es6",
+	  "outDir": "out",
+	  "rootDir": "src",
+	  "lib": ["es6"],
+	  "sourceMap": true,
+	  "strict": true,
+	  "esModuleInterop": true
+	},
+	// only compile our extension code in src/
+	"include": [
+	  "src/**/*.ts"
+	],
+	// and explicitly skip tests + anything in node_modules
+	"exclude": [
+	  "node_modules",
+	  "src/test",
+	  "**/*.test.ts"
+	]
+  }
+  

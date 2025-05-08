@@ -1,0 +1,71 @@
+{
+  "name": "tspmo-language",
+  "displayName": "TSPMO Language",
+  "publisher": "you",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.60.0" },
+
+  "activationEvents": [
+    "onLanguage:tspmo",
+    "onCommand:tspmo.runCode"
+  ],
+
+  "main": "./out/extension.js",
+  "categories": ["Programming Languages"],
+
+  "contributes": {
+    "languages": [{
+      "id": "tspmo",
+      "aliases": ["TSPMO","tspmo"],
+      "extensions": [".tspmo", ".pmo"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "tspmo",
+      "scopeName": "source.tspmo",
+      "path": "./syntaxes/tspmo.tmLanguage.json"
+    }],
+
+    "commands": [{
+      "command": "tspmo.runCode",
+      "title": "TSPMO: Run Current File"
+    }],
+
+    "menus": {
+      "commandPalette": [{
+        "command": "tspmo.runCode",
+        "when": "editorLangId == tspmo"
+      }],
+      "editor/context": [{
+        "command": "tspmo.runCode",
+        "when": "editorLangId == tspmo",
+        "group": "navigation"
+      }]
+    },
+
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "tspmo.interpreterPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to your TSPMO interpreter script"
+        }
+      }
+    }
+  },
+
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc -p ."
+  },
+
+  "dependencies": {
+    "vscode-languageclient": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.5.4",
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^14.0.0"
+  }
+}
