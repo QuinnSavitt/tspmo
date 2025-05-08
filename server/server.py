@@ -196,45 +196,6 @@ def lint_text(text: str) -> list[Diagnostic]:
             DiagnosticSeverity.Error
         ))
 
-    # function & return checks
-    funcs: dict[str, dict] = {}
-    for m in re.finditer(r'\bLEBRON\s+(\w+)((?:\s+\w+)*)\s+ngl\b', text):
-        name = m.group(1)
-        params = m.group(2).strip().split() if m.group(2).strip() else []
-        funcs[name] = {'count': len(params), 'start': m.end()}
-    goat_pos = [m.start() for m in re.finditer(r'\bGOAT\b', text)]
-    for i, (fname, info) in enumerate(funcs.items()):
-        end = goat_pos[i] if i < len(goat_pos) else len(text)
-        block = text[info['start']:end]
-        if 'dih' not in block:
-            diags.append(Diagnostic(
-                Range(pos_from_idx(text,info['start']),
-                      pos_from_idx(text,info['start']+3)),
-                f"Function '{fname}' has no return (no 'dih')",
-                DiagnosticSeverity.Warning
-            ))
-
-    # argument count & literal-in-args
-    for fname, info in funcs.items():
-        pattern = rf'\b{fname}\b((?:\s+\w+)+)\s+pmo'
-        for m in re.finditer(pattern, text):
-            args = m.group(1).strip().split()
-            if len(args) != info['count']:
-                diags.append(Diagnostic(
-                    Range(pos_from_idx(text,m.start()),
-                          pos_from_idx(text,m.start()+len(fname))),
-                    f"Wrong arg count for '{fname}': expected {info['count']}, got {len(args)}",
-                    DiagnosticSeverity.Error
-                ))
-            for arg in args:
-                if re.match(r'^(?:tun|sahur|sigma|beta|legit|bro)$', arg):
-                    diags.append(Diagnostic(
-                        Range(pos_from_idx(text,m.start()),
-                              pos_from_idx(text,m.start()+len(arg))),
-                        f"Literal '{arg}' cannot be used as argument",
-                        DiagnosticSeverity.Error
-                    ))
-
     return diags
 
 def idx_from_pos(text: str, line: int, col: int) -> int:
