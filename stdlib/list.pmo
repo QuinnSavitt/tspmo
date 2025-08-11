@@ -29,6 +29,22 @@ LEBRON popi x i ngl
 	ts dih r pmo
 GOAT
 
+LEBRON peek x ngl
+	-> return the last item of list x without removing it <-
+	ts rizz l girth x pmo
+	ts rizz r gt x #shrink l tun tun sahur pmo
+	ts dih r pmo
+GOAT
+
+LEBRON snip x len ngl
+	-> return a new list containing the first len items of x <-
+	ts dih mogs girth x len yo pmo
+	ts kid pmo
+		ts rm x pmo
+	ts gurt pmo
+	ts dih x pmo
+GOAT
+
 LEBRON sort x ngl
 	-> Sort x in-place <-
 	ts rizz l girth x pmo

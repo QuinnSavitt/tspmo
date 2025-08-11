@@ -7,11 +7,25 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
+
+def _lex_with_lines(text: str):
+    tokens = []
+    lines  = []
+    for lineno, raw in enumerate(text.splitlines(), start=1):
+        parts = raw.split()
+        if not parts:
+            continue
+        tokens.extend(parts)
+        lines.extend([lineno] * len(parts))
+    return tokens, lines
+
+
 def run_file(path: str) -> int:
     try:
         with open(path, "r") as f:
             file_contents = f.read()
-        LexParse(file_contents.split())
+        tokens, lines = _lex_with_lines(file_contents)
+        LexParse(tokens, line_map=lines)
         return 0
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -46,7 +60,7 @@ class Function:
         self.contents = []
         self.params = []
 
-    def do(self, args=None):
+    def do(self, args=None, call_line: int = -1):
         global state
         local_sym = {}
         wait = []
@@ -55,6 +69,7 @@ class Function:
         if len(args) != len(self.params):
             raise Exception(f"Args bad in function with params {self.params}")
         newContents = []
+        newLines = []
         for i in range(len(args)):
             if isinstance(args[i], int):
                 args[i] = "tun " * (int(args[i]) + 1) + "sahur"
@@ -73,13 +88,14 @@ class Function:
             t = f"ts rizz {self.params[i]} {args[i]} pmo"
             for c in t.split():
                 newContents.append(c)
+                newLines.append(call_line)
         for t in wait:
             local_sym[self.params[t[0]]] = t[1]
         for c in self.contents:
             newContents.append(c)
-        # print(newContents)
+            newLines.append(call_line)
         state = "Start"
-        res = LexParse(contents=newContents, lexto=deque(), loc=local_sym)
+        res = LexParse(contents=newContents, lexto=deque(), loc=local_sym, line_map=newLines)
         state = "End"
         return res
 
@@ -92,7 +108,7 @@ reserved = {"ts", "pmo", "rizz", "tun", "sahur", "sigma", "beta", "touch", "#shr
             "pt", "put", "girth", "BOOM", "len", "ret"}
 
 
-def LexParse(contents, lexto=execList, loc=None):
+def LexParse(contents, lexto=execList, loc=None, line_map=None):
     global state
     global cval
     global bodyStack
@@ -101,11 +117,18 @@ def LexParse(contents, lexto=execList, loc=None):
     prestate = None
     i = 0
     r = None
+    if line_map is None:
+        line_map = [1] * len(contents)
+    current_stmt_start_line = None
+
+    def _err(msg):
+        ln = line_map[i] if 0 <= i < len(line_map) else -1
+        raise Exception(f"Line {ln}: {msg}")
+
     while i < len(contents):
         if debug:
             print("exec", lexto)
             print('state', state)
-            # print("flags", flagStack)
         c = contents[i]
         if c == "->":
             prestate = state
@@ -113,6 +136,7 @@ def LexParse(contents, lexto=execList, loc=None):
             i += 1
             c = contents[i]
         elif state == "Start":
+            current_stmt_start_line = line_map[i]
             if c == "ts":
                 state = "ts"
             elif c == "LEBRON":
@@ -145,19 +169,20 @@ def LexParse(contents, lexto=execList, loc=None):
                 i += 1
                 c = contents[i]
                 if c != "SOMETHING":
-                    raise Exception(f"Failed to correctly import modules. Are you closing with DO SOMETHING?")
+                    _err("Failed to correctly import modules. Are you closing with DO SOMETHING?")
                 for j in deps:
                     if j in stdlib:
                         with open("stdlib/" + j + ".pmo") as file:
-                            LexParse(file.read().split())
+                            tkns, lns = _lex_with_lines(file.read())
+                            LexParse(tkns, line_map=lns)
                     elif j in userlib:
                         with open("/userlib/" + j + "pmo") as file:
-                            LexParse(file.read().split())
+                            tkns, lns = _lex_with_lines(file.read())
+                            LexParse(tkns, line_map=lns)
                     else:
-                        raise Exception(f"Failed to load module {j}. It is either missing from the stdlib, or you"
-                                        f" forgot to add it to userlib.")
+                        _err(f"Failed to load module {j}. It is either missing from the stdlib, or you forgot to add it to userlib.")
             else:
-                raise Exception(f"Commands must start with ts or LEBRON stmt{stmt + 1}")
+                _err(f"Commands must start with ts or LEBRON stmt{stmt + 1}")
 
         elif state == "ts":
             if c == "yap":
@@ -209,7 +234,7 @@ def LexParse(contents, lexto=execList, loc=None):
                 i += 1
                 c = contents[i]
                 if c != "pmo":
-                    raise Exception(f"Pmo expected stmt {stmt + 1}")
+                    _err(f"Pmo expected stmt {stmt + 1}")
                 depth += 1
                 myDepth = depth
                 bodyStack.append([])
@@ -228,23 +253,26 @@ def LexParse(contents, lexto=execList, loc=None):
                     c = contents[i]
                 bodyStack[myDepth].pop(-1)
                 state = "Start"
-                while execute(deepcopy(condStack[myDepth]), loc=loc):
-                    LexParse(deepcopy(bodyStack[myDepth]), loc=loc, lexto=deque())
+                try:
+                    while execute(deepcopy(condStack[myDepth]), loc=loc, stmt_line=current_stmt_start_line):
+                        LexParse(deepcopy(bodyStack[myDepth]), loc=loc, lexto=deque(), line_map=[current_stmt_start_line]*len(bodyStack[myDepth]))
+                except Exception as e:
+                    raise Exception(f"Line {current_stmt_start_line}: {e}")
                 depth -= 1
                 bodyStack.pop(myDepth)
                 i += 1
                 c = contents[i]
                 if c != "pmo":
-                    raise Exception(f"Pmo expected stmt {stmt + 1}")
+                    _err(f"Pmo expected stmt {stmt + 1}")
                 i += 1
                 continue
 
             else:
-                raise Exception(f"Assignment or Function Expected stmt {stmt + 1} {c}")
+                _err(f"Assignment or Function Expected stmt {stmt + 1} {c}")
 
         elif state == "ID":
             if c in reserved:
-                raise Exception(f"{c} is reserved by the language stmt {stmt + 1}")
+                _err(f"{c} is reserved by the language stmt {stmt + 1}")
             else:
                 lexto.append(c)
                 lexto.append("set")
@@ -357,7 +385,7 @@ def LexParse(contents, lexto=execList, loc=None):
                 state = "End"
 
             else:
-                raise Exception(f"Not a valid Expression stmt {stmt + 1} {c}")
+                _err(f"Not a valid Expression stmt {stmt + 1} {c}")
 
         elif state == "tun":
             if c == "tun":
@@ -368,7 +396,7 @@ def LexParse(contents, lexto=execList, loc=None):
                 state = "End"
 
             else:
-                raise Exception(f"Int Interrupt stmt {stmt + 1}")
+                _err(f"Int Interrupt stmt {stmt + 1}")
 
         elif state == "legit":
             if c == "bro":
@@ -385,7 +413,10 @@ def LexParse(contents, lexto=execList, loc=None):
                 lexto.append("cond")
 
             elif c == "pmo":
-                m = execute(lexto, loc)
+                try:
+                    m = execute(lexto, loc, stmt_line=current_stmt_start_line)
+                except Exception as e:
+                    raise Exception(f"Line {current_stmt_start_line}: {e}")
                 if m is not None:
                     r = m
                 state = "Start"
@@ -426,7 +457,7 @@ def trans(value):
         return "ls " + str(value)
 
 
-def execute(execL=execList, loc=None):
+def execute(execL=execList, loc=None, stmt_line: int | None = None):
     global stmt
     global flagStack
     global collecting
@@ -442,209 +473,219 @@ def execute(execL=execList, loc=None):
     literal = False
     ret = None
     nxt = deque()
-    while execL:
-        if debug:
-            print(execL)
-            print(nxt)
-            print(temp)
-            print()
-        e = execL.pop()
-        if literal:
-            if temp is None:
-                temp = e
-            else:
-                nxt.append(e)
-            literal = False
-        elif isinstance(e, bool) and not (e is 1 or e is 0):
-            if temp is None:
-                temp = e
-            else:
-                nxt.append(e)
-        elif isinstance(e, int):
-            if temp is None:
-                temp = e
-            else:
-                nxt.append(e)
-        elif isinstance(e, float):
-            if temp is None:
-                temp = e
-            else:
-                nxt.append(e)
-        elif isinstance(e, list):
-            if temp is None:
-                temp = e
-            else:
-                nxt.append(e)
-        elif e == "+":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() + nxt.pop())
-            else:
-                temp += nxt.pop()
-        elif e == "-":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop()-nxt.pop())
-            else:
-                temp = nxt.pop() - temp
-        elif e == "*":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() * nxt.pop())
-            else:
-                temp = nxt.pop() * temp
-        elif e == "/":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() // nxt.pop())
-            else:
-                temp = nxt.pop() // temp
-        elif e == "./":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() / nxt.pop())
-            else:
-                temp = nxt.pop() / temp
-        elif e == "%":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() % nxt.pop())
-            else:
-                temp = nxt.pop() % temp
-        elif e == ">":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() > nxt.pop())
-            else:
-                temp = nxt.pop() > temp
-        elif e == "==":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() == nxt.pop())
-            else:
-                temp = nxt.pop() == temp
-        elif e == "or":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() or nxt.pop())
-            else:
-                temp = nxt.pop() or temp
-        elif e == "and":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop() and nxt.pop())
-            else:
-                temp = nxt.pop() and temp
-        elif e == "not":
-            if nxt:
-                nxt[-1] = not nxt[-1]
-            else:
-                temp = not temp
-        elif e == "concat":
-            if len(nxt) > 1:
-                tmp = nxt.pop()
-                nxt.append(nxt.pop() + tmp)
-            else:
-                temp = nxt.pop() + temp
-        elif e == "add":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop().append(nxt.pop()))
-            else:
-                temp = nxt.pop().append(temp)
-        elif e == "get":
-            if len(nxt) > 1:
-                nxt.append(nxt.pop()[nxt.pop()])
-            else:
-                temp = nxt.pop()[temp]
-        elif e == "remove":
-            if nxt:
-                nxt[-1].pop(-1)
-            else:
-                temp.pop(-1)
 
-        elif e == "tobool":
-            if nxt:
-                nxt[-1] = bool(nxt[-1])
-            else:
-                temp = bool(temp)
-        elif e == "toint":
-            if nxt:
-                nxt[-1] = int(nxt[-1])
-            else:
-                temp = int(temp)
-        elif e == "tostring":
-            if nxt:
-                nxt[-1] = str(nxt[-1])
-            else:
-                temp = str(temp)
-        elif e == "tofloat":
-            if nxt:
-                nxt[-1] = float(nxt[-1])
-            else:
-                temp = float(temp)
-        elif e == "put":
-            if len(nxt) != 2:
-                raise Exception("Incorrect array put")
-            arr = nxt.pop()
-            ind = nxt.pop()
-            arr[ind] = temp
-        elif e == "split":
-            if nxt:
-                nxt[-1] = nxt[-1].split()
-            else:
-                temp = temp.split()
-        elif e == "len":
-            if nxt:
-                nxt[-1] = len(nxt[-1])
-            else:
-                temp = len(temp)
-        elif e == "print":
-            print(trans(temp), f"({temp})")
-        elif e == "check":
-            flag = bool(temp)
-        elif e == "cond":
-            condStack.append(deque([deepcopy(i) for i in execL]))
-        elif e == "collect":
-            collecting = True
-        elif e == "clear":
-            temp = None
-        elif e == "input":
-            execL.append(input(temp))
-            execL.append("Str")
-        elif e == "Str":
-            literal = True
-        elif e == "set":
-            setting = True
-        elif e == "setReturn":
-            ret = temp
-        else:
-            parts = e.split()
-            if parts[0] in funcs:
-                fname = parts[0]
-                rawArgs = parts[1:]
-                resolved = []
-                for a in rawArgs:
-                    if isinstance(a, (int, bool)):
-                        resolved.append(a)
-                    elif isinstance(a, str) and a.isdigit():
-                        resolved.append(int(a))
-                    elif loc is not None and a in loc:
-                        resolved.append(loc[a])
-                    elif a in sym:
-                        resolved.append(sym[a])
-                    else:
-                        raise Exception(f"Unknown argument {a!r} for function {fname}")
-                res = funcs[fname].do(args=resolved)
-                if res is not None:
-                    execL.append(res)
-                    if isinstance(res, str):
-                        execL.append("Str")
-            elif setting:
-                if loc is not None:
-                    loc[e] = temp
+    def _wrap_err(msg_or_exc):
+        base = str(msg_or_exc)
+        if stmt_line is not None:
+            return Exception(f"Line {stmt_line}: {base}")
+        return Exception(base)
+
+    try:
+        while execL:
+            if debug:
+                print(execL)
+                print(nxt)
+                print(temp)
+                print()
+            e = execL.pop()
+            if literal:
+                if temp is None:
+                    temp = e
                 else:
-                    sym[e] = temp
-                setting = False
+                    nxt.append(e)
+                literal = False
+            elif isinstance(e, bool) and not (e is 1 or e is 0):
+                if temp is None:
+                    temp = e
+                else:
+                    nxt.append(e)
+            elif isinstance(e, int):
+                if temp is None:
+                    temp = e
+                else:
+                    nxt.append(e)
+            elif isinstance(e, float):
+                if temp is None:
+                    temp = e
+                else:
+                    nxt.append(e)
+            elif isinstance(e, list):
+                if temp is None:
+                    temp = e
+                else:
+                    nxt.append(e)
+            elif e == "+":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() + nxt.pop())
+                else:
+                    temp += nxt.pop()
+            elif e == "-":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop()-nxt.pop())
+                else:
+                    temp = nxt.pop() - temp
+            elif e == "*":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() * nxt.pop())
+                else:
+                    temp = nxt.pop() * temp
+            elif e == "/":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() // nxt.pop())
+                else:
+                    temp = nxt.pop() // temp
+            elif e == "./":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() / nxt.pop())
+                else:
+                    temp = nxt.pop() / temp
+            elif e == "%":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() % nxt.pop())
+                else:
+                    temp = nxt.pop() % temp
+            elif e == ">":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() > nxt.pop())
+                else:
+                    temp = nxt.pop() > temp
+            elif e == "==":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() == nxt.pop())
+                else:
+                    temp = nxt.pop() == temp
+            elif e == "or":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() or nxt.pop())
+                else:
+                    temp = nxt.pop() or temp
+            elif e == "and":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop() and nxt.pop())
+                else:
+                    temp = nxt.pop() and temp
+            elif e == "not":
+                if nxt:
+                    nxt[-1] = not nxt[-1]
+                else:
+                    temp = not temp
+            elif e == "concat":
+                if len(nxt) > 1:
+                    tmp = nxt.pop()
+                    nxt.append(nxt.pop() + tmp)
+                else:
+                    temp = nxt.pop() + temp
+            elif e == "add":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop().append(nxt.pop()))
+                else:
+                    temp = nxt.pop().append(temp)
+            elif e == "get":
+                if len(nxt) > 1:
+                    nxt.append(nxt.pop()[nxt.pop()])
+                else:
+                    temp = nxt.pop()[temp]
+            elif e == "remove":
+                if nxt:
+                    nxt[-1].pop(-1)
+                else:
+                    temp.pop(-1)
+
+            elif e == "tobool":
+                if nxt:
+                    nxt[-1] = bool(nxt[-1])
+                else:
+                    temp = bool(temp)
+            elif e == "toint":
+                if nxt:
+                    nxt[-1] = int(nxt[-1])
+                else:
+                    temp = int(temp)
+            elif e == "tostring":
+                if nxt:
+                    nxt[-1] = str(nxt[-1])
+                else:
+                    temp = str(temp)
+            elif e == "tofloat":
+                if nxt:
+                    nxt[-1] = float(nxt[-1])
+                else:
+                    temp = float(temp)
+            elif e == "put":
+                if len(nxt) != 2:
+                    raise Exception("Incorrect array put")
+                arr = nxt.pop()
+                ind = nxt.pop()
+                arr[ind] = temp
+            elif e == "split":
+                if nxt:
+                    nxt[-1] = nxt[-1].split()
+                else:
+                    temp = temp.split()
+            elif e == "len":
+                if nxt:
+                    nxt[-1] = len(nxt[-1])
+                else:
+                    temp = len(temp)
+            elif e == "print":
+                print(trans(temp), f"({temp})")
+            elif e == "check":
+                flag = bool(temp)
+            elif e == "cond":
+                condStack.append(deque([deepcopy(i) for i in execL]))
+            elif e == "collect":
+                collecting = True
+            elif e == "clear":
+                temp = None
+            elif e == "input":
+                execL.append(input(temp))
+                execL.append("Str")
+            elif e == "Str":
+                literal = True
+            elif e == "set":
+                setting = True
+            elif e == "setReturn":
+                ret = temp
             else:
-                value = loc[e] if (loc is not None and e in loc) else sym[e]
-                if value is None:
-                    print(f"about to append None for variable {e!r}")
-                execL.append(value)
-                if isinstance(value, str):
-                    execL.append("Str")
-    if flag is not None:
-        flagStack.append(flag)
-    return ret
+                parts = e.split()
+                if parts[0] in funcs:
+                    fname = parts[0]
+                    rawArgs = parts[1:]
+                    resolved = []
+                    for a in rawArgs:
+                        if isinstance(a, (int, bool)):
+                            resolved.append(a)
+                        elif isinstance(a, str) and a.isdigit():
+                            resolved.append(int(a))
+                        elif loc is not None and a in loc:
+                            resolved.append(loc[a])
+                        elif a in sym:
+                            resolved.append(sym[a])
+                        else:
+                            raise Exception(f"Unknown argument {a!r} for function {fname}")
+                    res = funcs[fname].do(args=resolved, call_line=stmt_line if stmt_line is not None else -1)
+                    if res is not None:
+                        execL.append(res)
+                        if isinstance(res, str):
+                            execL.append("Str")
+                elif setting:
+                    if loc is not None:
+                        loc[e] = temp
+                    else:
+                        sym[e] = temp
+                    setting = False
+                else:
+                    value = loc[e] if (loc is not None and e in loc) else sym[e]
+                    if value is None:
+                        print(f"about to append None for variable {e!r}")
+                    execL.append(value)
+                    if isinstance(value, str):
+                        execL.append("Str")
+        if flag is not None:
+            flagStack.append(flag)
+        return ret
+    except Exception as inner:
+        raise _wrap_err(inner)
 
 
 def main():
