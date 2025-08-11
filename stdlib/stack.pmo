@@ -1,0 +1,18 @@
+REF list DO SOMETHING
+
+LEBRON STACK ngl
+    -> Create a new stack <-
+    ts rizz s ls pmo
+    ts dih s pmo
+GOAT
+
+LEBRON s.push x v ngl
+    -> Push v onto stack x <-
+    ts sybau ad x v pmo
+GOAT
+
+LEBRON s.pop x ngl
+    -> Pop the top item from stack x <-
+    ts rizz v pop x pmo
+    ts dih v pmo
+GOAT

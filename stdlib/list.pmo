@@ -37,7 +37,7 @@ LEBRON peek x ngl
 GOAT
 
 LEBRON snip x len ngl
-	-> return a new list containing the first len items of x <-
+	-> split x into two lists: the original containing the first len items, and the returned containing the rest <-
 	ts dih mogs girth x len yo pmo
 	ts kid pmo
 		ts sybau rm x pmo
@@ -64,4 +64,58 @@ LEBRON sort x ngl
 		ts gurt pmo
 		ts rizz end #shrink end tun tun sahur pmo
 	ts gurt pmo
+GOAT
+
+LEBRON i.mean x ngl
+	-> Int mean of list x <-
+	ts rizz s tun sahur pmo
+	ts rizz i tun sahur pmo
+	ts dih mogs girth x i yo pmo
+	ts kid pmo
+		ts rizz s touch s gt x i pmo
+		ts rizz i touch i tun tun sahur pmo
+	ts gurt pmo
+	ts dih big25 s girth x pmo
+GOAT
+
+LEBRON f.mean x ngl
+	-> Float mean of list x <-
+	ts rizz s tun sahur pmo
+	ts rizz i tun sahur pmo
+	ts dih mogs girth x i yo pmo
+	ts kid pmo
+		ts rizz s touch s gt x i pmo
+		ts rizz i touch i tun tun sahur pmo
+	ts gurt pmo
+	ts dih bigf s girth x pmo
+GOAT
+
+LEBRON min x ngl
+	-> min of list x <-
+	ts rizz c gt x tun sahur pmo
+	ts rizz i tun tun sahur pmo
+	ts dih mogs girth x i yo pmo
+	ts kid pmo
+		ts hawk mogs gt x i c pmo
+			ts lion pmo
+				ts rizz c gt x i pmo
+			ts fr pmo
+		ts ong pmo
+	ts gurt pmo
+	ts dih c pmo
+GOAT
+
+LEBRON max x ngl
+	-> max of list x <-
+	ts rizz c gt x tun sahur pmo
+	ts rizz i tun tun sahur pmo
+	ts dih mogs girth x i yo pmo
+	ts kid pmo
+		ts hawk mogs c gt x i pmo
+			ts lion pmo
+				ts rizz c gt x i pmo
+			ts fr pmo
+		ts ong pmo
+	ts gurt pmo
+	ts dih c pmo
 GOAT
